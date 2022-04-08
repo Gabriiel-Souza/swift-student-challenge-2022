@@ -67,7 +67,7 @@ class HomeScene: SKScene, SkipInteraction {
         setupBackground()
         setupChar()
         setupSentences()
-        setupNextSpeechArrow()
+        setupNextSpeechArrow(needToHide: true)
     }
     // MARK: - Setups
     /// Setup Initial nodes for scene background
@@ -143,11 +143,6 @@ class HomeScene: SKScene, SkipInteraction {
         let typeLetters = SKAction.repeat(sequence, count: speech.count)
         self.sentences.run(typeLetters, withKey: "texting")
     }
-    /// Hide or show the arrow to go to next speech
-    /// - Parameter isHidden: Tha value to change the alpha of `nextArrow`
-    private func isNextSpeechArrowHidden(_ isHidden: Bool) {
-        nextArrow.alpha = isHidden ? 0 : 1
-    }
     
     private func presentPart2() {
         view?.presentScene(HomeScene(size: frame.size, part: .second), transition: .fade(withDuration: 0.5))
@@ -161,7 +156,7 @@ class HomeScene: SKScene, SkipInteraction {
     }
     
     private func goToTutorial() {
-        view?.presentScene(TutorialScene())
+        view?.presentScene(TutorialScene(size: frame.size), transition: .fade(withDuration: 1.0))
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
