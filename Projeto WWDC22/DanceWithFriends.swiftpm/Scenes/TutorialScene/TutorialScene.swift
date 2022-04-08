@@ -8,13 +8,31 @@
 import SpriteKit
 
 class TutorialScene: SKScene {
-    let tutorialLabel = SKLabelNode(text: "")
+    private let tutorialLabel = SKLabelNode(text: "")
+    private var actualText = TutorialSpeech.first
     
     override func didMove(to view: SKView) {
         super.didMove(to: view)
+        backgroundColor = .white
+        changeTutorialText()
+    }
+    
+    private func changeTutorialText() {
+        actualText = actualText.next()
+        tutorialLabel.text = actualText.rawValue
+    }
+    
+    private func goToGameScene() {
         
     }
     
-    private func 
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if actualText != .last {
+            
+            changeTutorialText()
+        } else {
+            
+        }
+    }
     
 }

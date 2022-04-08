@@ -29,14 +29,14 @@ enum HomeScenePart {
     case second
 }
 
-class HomeScene: SKScene {
+class HomeScene: SKScene, SkipInteraction {
     // MARK: - Varibles
-    private var nextArrow = SKSpriteNode(imageNamed: HomeSceneAssets.HUD.nextArrow)
+    internal var nextArrow = SKSpriteNode(imageNamed: HomeSceneAssets.HUD.nextArrow)
     private var sentences = SKLabelNode()
     private let part: HomeScenePart
-    private lazy var actualSpeech = part == .first ? Speech.initial : .six
+    private lazy var actualSpeech = part == .first ? HomeSpeech.initial : .six
     // MARK: - Nodes
-    private var char: MainChar
+    private var char = MainChar()
     private let wall = SKSpriteNode(imageNamed: HomeSceneAssets.Scenery.wall)
     private let commode = SKSpriteNode(imageNamed: HomeSceneAssets.Scenery.commode)
     private let plant = SKSpriteNode(imageNamed: HomeSceneAssets.Scenery.plant)
@@ -61,7 +61,6 @@ class HomeScene: SKScene {
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
     // MARK: - Life Cycle
     override func didMove(to view: SKView) {
         super.didMove(to: view)
@@ -120,24 +119,6 @@ class HomeScene: SKScene {
         }
         addChild(sentences)
     }
-    /// Setup HUD Nodes
-    private func setupNextSpeechArrow() {
-        // Next Arrow
-        nextArrow.anchorPoint = CGPoint(x: 1.0, y: 0.5)
-        nextArrow.name = "nextArrow"
-        nextArrow.position = CGPoint(x: frame.width * 0.95, y: frame.height * 0.1)
-        nextArrow.alpha = 0
-        let moveRigth = SKAction.moveTo(x: nextArrow.position.x + 5, duration: 0.3)
-        let moveLeft = SKAction.moveTo(x: nextArrow.position.x - 5, duration: 0.3)
-        nextArrow.run(
-            .repeatForever(
-                .sequence(
-                    [moveRigth, moveLeft]
-                )
-            )
-        )
-        addChild(nextArrow)
-    }
     // MARK: - Functions
     /// Change the `sentences` label to the next Speech
     private func changeSpeech() {
@@ -188,15 +169,20 @@ class HomeScene: SKScene {
             if part == .first && actualSpeech == .six {
                 presentPart2()
             } else {
-                actualSpeech == .nine ? goToTutorial() : changeSpeech()
+                actualSpeech == .last ? goToTutorial() : changeSpeech()
             }
             
             if actualSpeech == .eight {
                 removeObjects()
+                // Portrait
                 let portraitNode = SKSpriteNode(imageNamed: HomeSceneAssets.Char.portrait)
                 portraitNode.anchorPoint = CGPoint(x: 0.5, y: .zero)
                 portraitNode.position = CGPoint(x: frame.midX, y: frame.height * 0.05)
+                portraitNode.alpha = 0
                 addChild(portraitNode)
+                // Action
+                let show = SKAction.fadeAlpha(to: 1, duration: 1.0)
+                portraitNode.run(show)
             }
         } else {
             sentences.removeAllActions()
@@ -210,6 +196,10 @@ class HomeScene: SKScene {
     }
     
     deinit {
-        print("Scene deinit")
+        children.forEach { child in
+            child.removeAllActions()
+            child.removeAllChildren()
+            child.removeFromParent()
+        }
     }
 }

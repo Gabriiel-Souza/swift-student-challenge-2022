@@ -1,11 +1,11 @@
 //
-//  Speeches.swift
+//  HomeSpeech.swift
 //  DanceWithFriends
 //
 //  Created by Gabriel Souza de Araujo on 05/04/22.
 //
 
-public enum Speech: String, CaseIterable {
+public enum HomeSpeech: String, CaseIterable {
     case initial = ""
     case first = "Hi! How are you?"
     case second = "This is Robert, he recently moved out of town"
@@ -15,7 +15,7 @@ public enum Speech: String, CaseIterable {
     case six = "...Fear of what is to come..."
     case seven = "But the hardest part is definitely the friends left behind..."
     case eight = "Making new friends in a new city may seem difficult for most people"
-    case nine = "But I'll show you that with the power of music everything becomes easier!"
+    case last = "But I'll show you that with the power of music everything becomes easier!"
     
     mutating func next() -> Self {
         let speeches = Self.allCases

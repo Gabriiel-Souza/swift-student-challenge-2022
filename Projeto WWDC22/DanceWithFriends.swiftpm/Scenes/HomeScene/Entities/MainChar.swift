@@ -9,6 +9,10 @@ import SpriteKit
 
 class MainChar: SKSpriteNode {
     // MARK: - Initializers
+    init () {
+        super.init(texture: nil, color: .clear, size: .zero)
+    }
+    
     init(texture: SKTexture, color: UIColor) {
         super.init(texture: texture, color: color, size: texture.size())
     }
