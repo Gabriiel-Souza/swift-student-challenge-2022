@@ -61,7 +61,6 @@ class HomeScene: SKScene {
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
     // MARK: - Life Cycle
     override func didMove(to view: SKView) {
         super.didMove(to: view)
