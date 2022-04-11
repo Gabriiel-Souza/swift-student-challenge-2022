@@ -6,9 +6,9 @@
 //
 
 import AVFoundation
-protocol MusicBeatDelegate {
-    func beatWillOccur(in time: TimeInterval)
-    func beatWillFinish(in time: TimeInterval)
+protocol MusicBeatDelegate: AnyObject {
+    func beatWillOccur(in time: Float)
+    func beatWillFinish(in time: Float)
 }
 /// Catch the power of music and notify when it hits the minimun value
 class MusicEngine: NSObject {
@@ -21,7 +21,7 @@ class MusicEngine: NSObject {
     private var prevRMSValue: Float = 0
     private var mainSongPath: String?
     private var beatSongPath: String?
-    private let songDelay: TimeInterval = 2
+    private let songDelay: Float = 2
     
     // Audio Engine
     private let audioEngine: AVAudioEngine? = AVAudioEngine()
@@ -34,7 +34,7 @@ class MusicEngine: NSObject {
     private var audioFile = [AVAudioFile]()
     private var audioBuffer = [AVAudioPCMBuffer]()
     
-    override init(delegate: MusicBeatDelegate) {
+    init(delegate: MusicBeatDelegate) {
         self.delegate = delegate
         let path = Bundle.main.path(forResource: "song", ofType: "mp3")
         mainSongPath = path

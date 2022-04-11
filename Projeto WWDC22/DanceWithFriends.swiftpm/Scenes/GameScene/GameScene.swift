@@ -411,12 +411,12 @@ class GameScene: SKScene {
 }
 
 extension GameScene: MusicBeatDelegate {
-    func beatWillOccur(in time: TimeInterval) {
-        <#code#>
+    func beatWillOccur(in time: Float) {
+        
     }
     
-    func beatWillFinish(in time: TimeInterval) {
-        <#code#>
+    func beatWillFinish(in time: Float) {
+        
     }
     
 }
