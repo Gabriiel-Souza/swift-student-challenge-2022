@@ -9,7 +9,7 @@ import SpriteKit
 
 class HomeSceneAssets {
     enum HUD {
-        static let nextArrow = "right_arrow"
+        static let nextArrow = "next_arrow"
     }
     enum Char {
         static let charWithItem = "char_item_"
@@ -30,11 +30,12 @@ enum HomeScenePart {
 }
 
 class HomeScene: SKScene, SkipInteraction {
-    // MARK: - Varibles
+    // MARK: - Variables
     internal var nextArrow = SKSpriteNode(imageNamed: HomeSceneAssets.HUD.nextArrow)
     private var sentences = SKLabelNode()
     private let part: HomeScenePart
     private lazy var actualSpeech = part == .first ? HomeSpeech.initial : .six
+    private weak var gameVC: GameViewController?
     // MARK: - Nodes
     private var char = MainChar()
     private let wall = SKSpriteNode(imageNamed: HomeSceneAssets.Scenery.wall)
@@ -48,8 +49,9 @@ class HomeScene: SKScene, SkipInteraction {
         }
     }
     // MARK: - Initializers
-    init(size: CGSize, part: HomeScenePart) {
+    init(size: CGSize, part: HomeScenePart, gameVC: GameViewController?) {
         self.part = part
+        self.gameVC = gameVC
         let texture = part == .first ?
         SKTexture(imageNamed: HomeSceneAssets.Char.charWithItem + "1_" + "L") :
         SKTexture(imageNamed: HomeSceneAssets.Char.charWithPortrait)
@@ -128,24 +130,25 @@ class HomeScene: SKScene, SkipInteraction {
         sentences.text = ""
         // Setup for speech
         let speech = actualSpeech.rawValue
-        let numberOfLetters = speech.count
+        let lettersCount = speech.count
         var index = 0
         // Type animation
-        let wait = SKAction.wait(forDuration: 0.05)
+        let wait = SKAction.wait(forDuration: 0.06)
         let addLetter = SKAction.run {
             index += 1
-            self.sentences.text = String(speech.prefix(index))
-            if index >= numberOfLetters {
+            let textToWrite = String(speech.prefix(index))
+            self.sentences.text = textToWrite
+            if textToWrite == speech {
                 self.finishedActualSpeech = true
             }
         }
         let sequence = SKAction.sequence([wait, addLetter])
-        let typeLetters = SKAction.repeat(sequence, count: speech.count)
-        self.sentences.run(typeLetters, withKey: "texting")
+        let typeLetters = SKAction.repeat(sequence, count: lettersCount)
+        sentences.run(typeLetters, withKey: "texting")
     }
     
     private func presentPart2() {
-        view?.presentScene(HomeScene(size: frame.size, part: .second), transition: .fade(withDuration: 0.5))
+        view?.presentScene(HomeScene(size: frame.size, part: .second, gameVC: gameVC ?? GameViewController()), transition: .fade(withDuration: 0.5))
     }
     
     private func removeObjects() {
@@ -156,7 +159,7 @@ class HomeScene: SKScene, SkipInteraction {
     }
     
     private func goToTutorial() {
-        view?.presentScene(TutorialScene(size: frame.size), transition: .fade(withDuration: 1.0))
+        gameVC?.sceneToPresent = .tutorial
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {

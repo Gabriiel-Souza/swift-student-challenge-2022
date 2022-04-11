@@ -8,8 +8,7 @@ import UIKit
 
 public class Font {
     public static let main: UIFont = {
-        let defaultFont = UIFont.systemFont(ofSize: 14, weight: .bold)
         let font = UIFont(name: "Fredoka One", size: 14)
-        return font ?? defaultFont
+        return font.orDefault
     }()
 }

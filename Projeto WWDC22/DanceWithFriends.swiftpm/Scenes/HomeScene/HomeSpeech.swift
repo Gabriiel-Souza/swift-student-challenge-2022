@@ -19,7 +19,7 @@ public enum HomeSpeech: String, CaseIterable {
     
     mutating func next() -> Self {
         let speeches = Self.allCases
-        let actualIndex = speeches.firstIndex(of: self) ?? speeches.startIndex
+        let actualIndex = speeches.firstIndex(of: self).orDefault
         let endIndex = speeches.endIndex - 1
         let nextSpeechIndex = actualIndex == endIndex ? speeches.startIndex : speeches.index(after: actualIndex)
         return speeches[nextSpeechIndex]
