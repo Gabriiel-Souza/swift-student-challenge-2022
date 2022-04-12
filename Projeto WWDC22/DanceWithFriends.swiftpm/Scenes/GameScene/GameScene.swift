@@ -45,21 +45,24 @@ class GameScene: SKScene {
     private var background = [SKSpriteNode]()
     private var actualLevel = Level.first
     private let sides = ObjectivePosition.allCases
-    var objectiveOrder = [ObjectivePosition]()
-    private(set) var playerCanScore = false
+    private var targetScore = 5
     private var score = 0 {
         didSet {
-            if oldValue == 5 {
+            if oldValue == targetScore {
+                changeWarningLabel(to: "Perfect!")
                 animateFriend()
                 if actualLevel != .third {
                     let newlevel = actualLevel.rawValue + 1
                     actualLevel = Level(rawValue: newlevel) ?? .first
+                    targetScore += 5
                     score = 0
                 } else {
                     print("Venceu o jogo")
                 }
             } else if score == 0 {
                 updateScoreLabel()
+            } else {
+                changeWarningLabel(to: "Great!")
             }
         }
     }
@@ -76,6 +79,10 @@ class GameScene: SKScene {
     private var warningLabel = SKLabelNode(fontNamed: Font.main.fontName)
     // Music
     private var engine: MusicEngine?
+    private(set) var isTopArrowInArea = false
+    private(set) var isLeftArrowInArea = false
+    private(set) var isBottomArrowInArea = false
+    private(set) var isRightArrowInArea = false
     // MARK: - Initializers
     init(size: CGSize, gameVC: GameViewController) {
         self.gameVC = gameVC
@@ -103,7 +110,6 @@ class GameScene: SKScene {
          leftArrow,
          bottomArrow,
          rightArrow].forEach { worldNode.addChild($0) }
-        drawObjectives()
         setupScoreLabel()
         setupWarningLabel()
         setupSong()
@@ -242,105 +248,19 @@ class GameScene: SKScene {
         return wristNode
     }
     // MARK: - Objectives
-    func resetObjetives() {
-        playerCanScore = false
+    func resetObjectives() {
         changeWarningLabel(to: "Miss!")
-        drawObjectives()
     }
     
-    private func drawObjectives() {
-        // Setup Values
-        var numberOfObjectives = 0
-        var objectiveSpeed: TimeInterval = 0
-        playerCanScore = false
-        objectiveOrder = [ObjectivePosition]()
-        // Attribute Values
-        switch actualLevel {
-        case .first:
-            numberOfObjectives = 3
-            objectiveSpeed = 1.5
-        case .second:
-            numberOfObjectives = 4
-            objectiveSpeed = 1.5
-        case .third:
-            numberOfObjectives = 5
-            objectiveSpeed = 1.5
-        }
-        getRandomOrder(numberOfObjectives: numberOfObjectives, objectiveSpeed: objectiveSpeed)
-    }
-    
-    private func getRandomOrder(numberOfObjectives: Int, objectiveSpeed: TimeInterval) {
-        var objectivePile = [ObjectivePosition]()
-        // Get a random order for objectives
-        for _ in 1...numberOfObjectives {
-            guard let newObjective = sides.randomElement() else { continue }
-            objectiveOrder.append(newObjective)
-            objectivePile.append(newObjective)
-        }
-        // Draw Actions
-        let wait = SKAction.wait(forDuration: objectiveSpeed)
-        let drawObjectives = SKAction.run { [weak self] in
-            guard let self = self, let objective = objectivePile.first else {
-                self?.playerCanScore = true
-                return
-            }
-            let color: UIColor
-            let node: SKSpriteNode
-            // Get Position
-            switch objective {
-            case .top:
-                // Top Position
-                color = .blue
-                node = self.topArrow
-            case .left:
-                // Left Position
-                color = .red
-                node = self.leftArrow
-            case .bottom:
-                // Down Position
-                color = .yellow
-                node = self.bottomArrow
-            case .right:
-                // Right Position
-                color = .green
-                node = self.rightArrow
-            }
-            // Node Actions
-            // Change the color and set alpha to 1 -> 0,5s
-            let setMaxAlpha = SKAction.fadeAlpha(to: 1, duration: 0.2)
-            let changeColor = SKAction.colorize(with: color, colorBlendFactor: 1, duration: 0.5)
-            let selected = SKAction.group([setMaxAlpha, changeColor])
-            // Wait for player see -> 0,5s
-            let nodeWait = SKAction.wait(forDuration: 0.5)
-            // Back to original state -> 0,5s
-            let originalTexture = SKAction.setTexture(SKTexture(imageNamed: "\(objective)_arrow"))
-            let originalAlpha = SKAction.fadeAlpha(to: 0.8, duration: 0.5)
-            let originalColor = SKAction.colorize(with: color, colorBlendFactor: 0, duration: 0.5)
-            let original = SKAction.group([originalTexture, originalAlpha, originalColor])
-            // Sequence -> 1,5s
-            let nodeSequence = SKAction.sequence([selected, nodeWait, original])
-            // Remove the first element on Array
-            let numberOfObjectives = objectivePile.count
-            objectivePile = objectivePile.suffix(numberOfObjectives - 1)
-            
-            node.run(nodeSequence)
-        }
-        let sequence = SKAction.sequence([drawObjectives, wait])
-        worldNode.run(.repeat(sequence, count: numberOfObjectives)) {
-            print("Player can score now")
-            self.playerCanScore = true
-        }
-    }
     // MARK: - Score
     func addScore() {
         score += 1
         updateScoreLabel()
-        drawObjectives()
     }
     
     private func updateScoreLabel() {
         scoreLabel.removeFromParent()
-        scoreLabel = SKLabelNode(color: .white, text: "\(score)/5", shadowColor: .black)
+        scoreLabel = SKLabelNode(color: .white, text: "\(score)/\(targetScore)", shadowColor: .black)
         setupScoreLabel()
     }
     
@@ -409,14 +329,82 @@ class GameScene: SKScene {
         }
     }
 }
-
+// MARK: - MusicBeatDelegate
 extension GameScene: MusicBeatDelegate {
-    func beatWillOccur(in time: Float) {
-        
+    private func getRandomArrow(delay: Double) {
+        guard let objective = sides.randomElement() else { return }
+        let color: UIColor
+        let node: SKSpriteNode
+        let target: CGPoint
+        // Get Position
+        switch objective {
+        case .top:
+            // Top Position
+            node = topArrow
+            target = CGPoint(x: frame.midX, y: frame.maxY + node.frame.height)
+            color = .blue
+        case .left:
+            // Left Position
+            node = leftArrow
+            target = CGPoint(x: frame.minX - node.frame.width, y: frame.midY)
+            color = .red
+        case .bottom:
+            // Down Position
+            node = bottomArrow
+            target = CGPoint(x: frame.midX, y: frame.minY - node.frame.height)
+            color = .yellow
+        case .right:
+            // Right Position
+            node = rightArrow
+            target = CGPoint(x: frame.maxX + node.frame.width, y: frame.midY)
+            color = .green
+        }
+        let ojectiveNode = SKSpriteNode(imageNamed: "\(objective)_arrow")
+        ojectiveNode.alpha = 0
+        ojectiveNode.position = CGPoint(x: frame.midX, y: frame.midY)
+        // Actions
+        // Change the color and set alpha to 1 -> 0,5s
+        let setMaxAlpha = SKAction.fadeAlpha(to: 1, duration: 0.2)
+        let changeColor = SKAction.colorize(with: color, colorBlendFactor: 1, duration: 0.5)
+        // Move
+        let moveTo = SKAction.move(to: target, duration: delay + 0.5)
+        // Enable Score
+        let wait = SKAction.wait(forDuration: delay - 0.5)
+        let canScore = SKAction.run {
+            switch objective {
+            case .top:
+                self.isTopArrowInArea = true
+            case .left:
+                self.isLeftArrowInArea = true
+            case .bottom:
+                self.isBottomArrowInArea = true
+            case .right:
+                self.isRightArrowInArea = true
+            }
+        }
+        let scoreSequence = SKAction.sequence([wait, canScore])
+        let appearAndMove = SKAction.group([setMaxAlpha, changeColor, moveTo, scoreSequence])
+        // Remove from scene
+        let removeNode = SKAction.removeFromParent()
+        let disableScore = SKAction.run {
+            switch objective {
+            case .top:
+                self.isTopArrowInArea.toggle()
+            case .left:
+                self.isLeftArrowInArea.toggle()
+            case .bottom:
+                self.isBottomArrowInArea.toggle()
+            case .right:
+                self.isRightArrowInArea.toggle()
+            }
+        }
+        // Sequence -> 2.5s
+        let nodeSequence = SKAction.sequence([appearAndMove, disableScore, removeNode])
+        ojectiveNode.run(nodeSequence)
+        worldNode.addChild(ojectiveNode)
     }
     
-    func beatWillFinish(in time: Float) {
-        
+    func beatWillOccur(in time: Double) {
+        getRandomArrow(delay: time)
     }
-    
 }

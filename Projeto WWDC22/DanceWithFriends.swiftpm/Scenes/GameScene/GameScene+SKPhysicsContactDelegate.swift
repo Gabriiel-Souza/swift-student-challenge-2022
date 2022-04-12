@@ -9,39 +9,28 @@ import SpriteKit
 extension GameScene: SKPhysicsContactDelegate {
     func didBegin(_ contact: SKPhysicsContact) {
         guard let arrow = contact.bodyA.node?.physicsBody?.categoryBitMask,
-              let mask = GameMask.init(rawValue: arrow),
-              let nextArrow = objectiveOrder.first
+              let mask = GameMask.init(rawValue: arrow)
         else { return }
+        let canScore: Bool
         
-        var side = ObjectivePosition.left
         switch mask {
         case .topArrowMask:
-            side = .top
+            canScore = isTopArrowInArea
         case .leftArrowMask:
-            side = .left
+            canScore = isLeftArrowInArea
         case .bottomArrowMask:
-            side = .bottom
+            canScore = isBottomArrowInArea
         case .rightArrowMask:
-            side = .right
+            canScore = isRightArrowInArea
         default:
+            canScore = false
             break
         }
-        if playerCanScore {
-            if side == nextArrow {
-                // Remove the first element on Array
-                let numberOfObjectives = objectiveOrder.count
-                print(numberOfObjectives)
-                objectiveOrder = objectiveOrder.suffix(numberOfObjectives - 1)
-                if objectiveOrder.isEmpty {
-                    changeWarningLabel(to: "Perfect!")
-                    print("Perfect")
-                    addScore()
-                } else {
-                    changeWarningLabel(to: "Great!")
-                }
-            } else {
-                resetObjetives()
-            }
+        
+        if canScore {
+            addScore()
+        } else {
+            changeWarningLabel(to: "Miss!")
         }
     }
 }

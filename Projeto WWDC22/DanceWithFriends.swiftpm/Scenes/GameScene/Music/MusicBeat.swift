@@ -7,8 +7,7 @@
 
 import AVFoundation
 protocol MusicBeatDelegate: AnyObject {
-    func beatWillOccur(in time: Float)
-    func beatWillFinish(in time: Float)
+    func beatWillOccur(in time: Double)
 }
 /// Catch the power of music and notify when it hits the minimun value
 class MusicEngine: NSObject {
@@ -135,12 +134,7 @@ class MusicEngine: NSObject {
             /* Only notificate GameScene if has a minimum value and previous value isn't the same
              This prevines to send multiple Notifications due the beat plays for more than 0.1 second
              */
-            delegate?.beatWillOccur(in: songDelay)
-        } else if rmsValue <= 0 && prevRMSValue > 0 {
-            /* If the last value was bigger than the minimum value and the actual value is lower, this
-             means that the beat has finished
-             */
-            delegate?.beatWillFinish(in: songDelay)
+            delegate?.beatWillOccur(in: Double(songDelay))
         }
         prevRMSValue = rmsValue
     }
