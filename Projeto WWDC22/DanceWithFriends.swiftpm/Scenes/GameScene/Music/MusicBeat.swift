@@ -105,8 +105,10 @@ class MusicEngine: NSObject {
             self.songDidFinished()
         }
         isAudioInitialized = true
-        backgroundAudioPlayer?.play()
-        mainAudioPlayer?.play()
+        DispatchQueue.main.async {
+            self.backgroundAudioPlayer?.play()
+            self.mainAudioPlayer?.play()
+        }
     }
     // MARK: - Music Beat
     /// Add a observer that will proccess the audio data and send a notification for GameScene if necessary
@@ -159,8 +161,10 @@ class MusicEngine: NSObject {
             installTap()
             setupMainSong()
         } else {
-            backgroundAudioPlayer?.play()
-            mainAudioPlayer?.play()
+            DispatchQueue.main.async {
+                self.backgroundAudioPlayer?.play()
+                self.mainAudioPlayer?.play()
+            }
         }
     }
     /// Pause the music

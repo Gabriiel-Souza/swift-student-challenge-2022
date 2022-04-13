@@ -7,7 +7,7 @@
 
 
 enum GameSceneAssets {
-    static let friend = "friend%@_"
+    static let friend = "friend%@_walking_"
     static let background = "background"
     static let char = "char_walking_"
     
@@ -120,7 +120,7 @@ class GameScene: SKScene {
         for numberNode in 0...1 {
             background.append(SKSpriteNode(texture: SKTexture(imageNamed: GameSceneAssets.background)))
             let background = background[numberNode]
-            let move = SKAction.move(by: CGVector(dx: -background.size.width, dy:0), duration: 25)
+            let move = SKAction.move(by: CGVector(dx: -background.size.width, dy: 0), duration: 25)
             let resetPosition = SKAction.move(by: CGVector(dx: background.size.width,dy: 0), duration: 0)
             
             background.zPosition = -1
@@ -134,7 +134,7 @@ class GameScene: SKScene {
     
     private func setupFriends() {
         for friendNumber in 1...3 {
-            let friend = SKSpriteNode(imageNamed: String(format: GameSceneAssets.friend, String(friendNumber)) + "L")
+            let friend = SKSpriteNode(imageNamed: String(format: GameSceneAssets.friend, String(friendNumber)) + "left_1")
             friend.position = CGPoint(x: frame.maxX, y: frame.height * 0.02)
             friend.anchorPoint = .zero
             friends.append(friend)
@@ -145,7 +145,7 @@ class GameScene: SKScene {
     private func setupChar() {
         char = MainChar(texture: SKTexture(imageNamed: GameSceneAssets.char + "1"), color: .clear)
         char.anchorPoint = .zero
-        char.position = CGPoint(x: frame.midX * 0.25, y: frame.height * 0.02)
+        char.position = CGPoint(x: frame.midX * 0.35, y: frame.height * 0.02)
         // Animation
         var textures = [SKTexture]()
         for i in 1...4 {
@@ -247,10 +247,6 @@ class GameScene: SKScene {
         wristNode.physicsBody?.collisionBitMask = GameMask.none.rawValue
         return wristNode
     }
-    // MARK: - Objectives
-    func resetObjectives() {
-        changeWarningLabel(to: "Miss!")
-    }
     
     // MARK: - Score
     func addScore() {
@@ -280,6 +276,22 @@ class GameScene: SKScene {
             sfxNode.run(.play())
         }
     }
+    
+    func toggleMask(_ mask: GameMask) {
+        switch mask {
+        case .topArrowMask:
+            isTopArrowInArea.toggle()
+        case .leftArrowMask:
+            isLeftArrowInArea.toggle()
+        case .bottomArrowMask:
+            isBottomArrowInArea.toggle()
+        case .rightArrowMask:
+            isRightArrowInArea.toggle()
+        default:
+            break
+        }
+    }
+    
     // MARK: - Friends
     private func animateFriend() {
         friendsMoved += 1
@@ -293,17 +305,37 @@ class GameScene: SKScene {
              rightArrow].forEach { $0.run(disappearSequence) }
         }
         let friend = friends[actualLevel.rawValue]
-        let distanceFromChar = actualLevel == .first ? friend.frame.size.width / 5 : friend.frame.size.width / 2
+        // Move Left Action
+        let divider = actualLevel == .first ? 2.5 : 3.3
+        let distanceFromChar = -((char.frame.width / divider) * CGFloat(actualLevel.rawValue + 1))
         let y = friend.position.y - CGFloat(actualLevel.rawValue) * 3
-        let referencePosition = actualLevel == .first ? char.position : friends[actualLevel.rawValue - 1].position
-        let move = SKAction.move(to: CGPoint(x: referencePosition.x - distanceFromChar,
-                                             y: y),
-                                 duration: 5)
-        let changeTexture = SKAction.setTexture(SKTexture(imageNamed: String(format: GameSceneAssets.friend,
-                                                                             String(actualLevel.rawValue + 1)) + "R"))
-        let sequence = SKAction.sequence([move, changeTexture])
-        friend.run(sequence) { [weak self] in
+        let moveLeft = SKAction.move(to: CGPoint(x: char.position.x + distanceFromChar,
+                                                 y: y),
+                                     duration: 5)
+        // Left Animation Action
+        var leftTextures = [SKTexture]()
+        for i in 1...4 {
+            let friend = String(format: GameSceneAssets.friend, String(actualLevel.rawValue + 1)) // Ex.: friend1_walking_
+            let texture = SKTexture(imageNamed: friend + "left_\(i)") // Ex.: friend1_walking_left_1
+            leftTextures.append(texture)
+        }
+        let animateLeft = SKAction.repeatForever(.animate(with: leftTextures, timePerFrame: 0.1))
+        // Right Animation Action
+        var rightTextures = [SKTexture]()
+        for i in 1...4 {
+            let friend = String(format: GameSceneAssets.friend, String(actualLevel.rawValue + 1)) // Ex.: friend1_walking_
+            let texture = SKTexture(imageNamed: friend + "right_\(i)") // Ex.: friend1_walking_right_1
+            rightTextures.append(texture)
+        }
+        let animateRight = SKAction.repeatForever(.animate(with: rightTextures, timePerFrame: 0.1))
+        // Move to left and animate friend
+        friend.run(animateLeft, withKey: "animateLeft")
+        friend.run(moveLeft) { [weak self] in
             guard let self = self else { return }
+            // Remove left animation
+            friend.removeAction(forKey: "animateLeft")
+            // Set right animation
+            friend.run(.repeatForever(animateRight))
             if self.friendsMoved == 3 {
                 let wait = SKAction.wait(forDuration: 4)
                 let goToFinalScene = SKAction.run {
@@ -332,7 +364,7 @@ class GameScene: SKScene {
 // MARK: - MusicBeatDelegate
 extension GameScene: MusicBeatDelegate {
     private func getRandomArrow(delay: Double) {
-        guard let objective = sides.randomElement() else { return }
+        guard friendsMoved < 3, let objective = sides.randomElement() else { return }
         let color: UIColor
         let node: SKSpriteNode
         let target: CGPoint
@@ -367,7 +399,7 @@ extension GameScene: MusicBeatDelegate {
         let setMaxAlpha = SKAction.fadeAlpha(to: 1, duration: 0.2)
         let changeColor = SKAction.colorize(with: color, colorBlendFactor: 1, duration: 0.5)
         // Move
-        let moveTo = SKAction.move(to: target, duration: delay + 0.5)
+        let moveTo = SKAction.move(to: target, duration: delay + 0.8)
         // Enable Score
         let wait = SKAction.wait(forDuration: delay - 0.5)
         let canScore = SKAction.run {
