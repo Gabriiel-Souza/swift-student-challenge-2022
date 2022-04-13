@@ -8,13 +8,13 @@ import PackageDescription
 import AppleProductTypes
 
 let package = Package(
-    name: "DanceWithFriends",
+    name: "Dance'n'Friends",
     platforms: [
         .iOS("15.2")
     ],
     products: [
         .iOSApplication(
-            name: "DanceWithFriends",
+            name: "Dance'n'Friends",
             targets: ["AppModule"],
             bundleIdentifier: "br.com.gabrielsouza.DanceWithFriends",
             teamIdentifier: "9UCZ959GPV",
@@ -29,6 +29,9 @@ let package = Package(
             supportedInterfaceOrientations: [
                 .landscapeRight,
                 .landscapeLeft
+            ],
+            capabilities: [
+                .camera(purposeString: "I need access to your camera to capture your hand movements")
             ]
         )
     ],
