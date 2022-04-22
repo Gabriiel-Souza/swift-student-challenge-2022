@@ -11,9 +11,7 @@ import Vision
 
 enum ScenePresenting {
     case home
-    case tutorial
     case game
-    case final
 }
 
 class GameViewController: UIViewController {
@@ -23,7 +21,6 @@ class GameViewController: UIViewController {
     private lazy var cameraView = CameraPreview(frame: .zero)
     private lazy var sessionQueue = DispatchQueue(label: "CameraOutput", qos: .userInteractive)
     // Vision
-    private var pointsProcessorHandler: (([CGPoint]) -> Void)?
     private let handPoseRequest: VNDetectHumanHandPoseRequest = {
         let request = VNDetectHumanHandPoseRequest()
         request.maximumHandCount = 1
@@ -32,7 +29,7 @@ class GameViewController: UIViewController {
     // Game View
     private var skView = SKView()
     private let sceneSize = CGSize(width: 700, height: 500)
-    private var skScene = SKScene()
+    private var skScene: SKScene?
     var sceneToPresent = ScenePresenting.home {
         didSet {
             setupScene()
@@ -65,8 +62,8 @@ class GameViewController: UIViewController {
     
     private func setupGameView() {
         skView = SKView(frame: CGRect(origin: .zero, size: sceneSize))
-        skView.showsFPS = true
-        skView.showsNodeCount = true
+        skView.showsFPS = false
+        skView.showsNodeCount = false
         skView.showsPhysics = false
         skView.showsDrawCount = false
         skView.contentMode = .scaleToFill
@@ -100,18 +97,13 @@ class GameViewController: UIViewController {
     private func setupScene() {
         skView.presentScene(nil)
         switch sceneToPresent {
-//        case .intro:
-//            skScene = IntroScene(size: sceneSize, gameVC: self)
         case .home:
             skScene = HomeScene(size: sceneSize, part: .first, gameVC: self)
-        case .tutorial:
-            skScene = TextScene(size: sceneSize, type: .tutorial, gameVC: self)
         case .game:
             setupCamera()
             skScene = GameScene(size: sceneSize, gameVC: self)
-        case .final:
-            skScene = TextScene(size: sceneSize, type: .final, gameVC: self)
         }
+        guard let skScene = skScene else { return }
         skScene.scaleMode = .fill
         if sceneToPresent != .home {
             skView.presentScene(skScene, transition: .fade(withDuration: 1.0))
@@ -207,7 +199,7 @@ extension GameViewController {
             guard let result = handPoseRequest.results?.first else { return }
             
             let wristRecognizedPoint = try result.recognizedPoint(.wrist)
-            // I don't want point with confidence <= 0.7;
+            // I don't want points with confidence less than 0.7
             if wristRecognizedPoint.confidence > 0.7 {
                 // Fix camera axis
                 let x = (wristRecognizedPoint.location.x)

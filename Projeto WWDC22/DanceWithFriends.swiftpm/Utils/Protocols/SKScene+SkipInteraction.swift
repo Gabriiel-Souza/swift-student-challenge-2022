@@ -1,5 +1,5 @@
 //
-//  SKScene+NextArrow.swift
+//  SKScene+SkipInteraction.swift
 //  DanceWithFriends
 //
 //  Created by Gabriel Souza de Araujo on 08/04/22.

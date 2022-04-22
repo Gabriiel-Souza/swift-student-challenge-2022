@@ -32,8 +32,14 @@ enum Level: Int {
     case third = 2
 }
 
+enum WarningType: String {
+    case miss = "Miss!"
+    case great = "Great!"
+    case perfect = "Perfect!"
+}
+
 import SpriteKit
-class GameScene: SKScene {
+class GameScene: SKScene, SoundPlayable {
     // MARK: - Variables
     // Camera
     private var isWristOnScene = false
@@ -49,7 +55,7 @@ class GameScene: SKScene {
     private var score = 0 {
         didSet {
             if oldValue == targetScore {
-                changeWarningLabel(to: "Perfect!")
+                changeWarningLabel(to: .perfect)
                 animateFriend()
                 if actualLevel != .third {
                     let newlevel = actualLevel.rawValue + 1
@@ -62,7 +68,7 @@ class GameScene: SKScene {
             } else if score == 0 {
                 updateScoreLabel()
             } else {
-                changeWarningLabel(to: "Great!")
+                changeWarningLabel(to: .great)
             }
         }
     }
@@ -106,6 +112,7 @@ class GameScene: SKScene {
         setupBackground()
         setupFriends()
         setupChar()
+        setupObservables()
         [topArrow,
          leftArrow,
          bottomArrow,
@@ -113,6 +120,20 @@ class GameScene: SKScene {
         setupScoreLabel()
         setupWarningLabel()
         setupSong()
+    }
+    
+    private func setupObservables() {
+        NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification,
+                                               object: nil,
+                                               queue: .main) { [weak self] _ in
+            self?.engine?.pauseMusic()
+        }
+        
+        NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification,
+                                               object: nil,
+                                               queue: .main) { [weak self] _ in
+            self?.engine?.playMusic()
+        }
     }
     
     private func setupBackground() {
@@ -181,11 +202,11 @@ class GameScene: SKScene {
         let center: CGPoint
         let horizontalSize = CGSize(width: frame.width * 0.7, height: 100)
         let verticalSize = CGSize(width: 100, height: frame.height * 0.7)
-        let vSpacing = (view?.safeAreaInsets.bottom).orDefault
-        var hSpacing = (view?.safeAreaInsets.left).orDefault
-        if hSpacing == 0 {
-            hSpacing = vSpacing
-        }
+        // Safe area spacing
+        let verticalSafeArea = (view?.safeAreaInsets.bottom).orDefault
+        let horizontalSafeArea = (view?.safeAreaInsets.left).orDefault
+        let vSpacing = verticalSafeArea > 0 ? verticalSafeArea : frame.height * 0.05
+        let hSpacing = horizontalSafeArea > 0 ? horizontalSafeArea : frame.width * 0.05
         let size: CGSize
         switch mask {
         case .topArrowMask:
@@ -220,24 +241,30 @@ class GameScene: SKScene {
             return SKSpriteNode()
         }
         arrow.alpha = 0.8
+        arrow.zPosition = 20
         // Physic Body
         arrow.physicsBody = SKPhysicsBody(rectangleOf: size , center: center)
         arrow.physicsBody?.isDynamic = false
         arrow.physicsBody?.categoryBitMask = mask.rawValue
-        //        arrow.physicsBody?.contactTestBitMask = GameMask.handMask.rawValue
         arrow.physicsBody?.collisionBitMask = GameMask.none.rawValue
         return arrow
     }
     
     private func makeWristNode() -> SKShapeNode {
-        let wristNode = SKShapeNode(circleOfRadius: 10)
+        let wristNode = SKShapeNode(circleOfRadius: 25)
         wristNode.name = "\(GameMask.handMask)"
-        wristNode.fillColor = .blue
+        wristNode.fillColor = .clear
         wristNode.strokeColor = .clear
+        wristNode.zPosition = 10
         // Physic Body
-        wristNode.physicsBody = SKPhysicsBody(circleOfRadius: 10)
+        wristNode.physicsBody = SKPhysicsBody(circleOfRadius: 25)
         wristNode.physicsBody?.affectedByGravity = false
         wristNode.physicsBody?.categoryBitMask = GameMask.handMask.rawValue
+        // Particles
+        if let particle = SKEmitterNode(fileNamed: "WristParticle.sks") {
+            particle.targetNode = self.scene
+            wristNode.addChild(particle)
+        }
         // Contact Mask
         wristNode.physicsBody?.contactTestBitMask =
         GameMask.topArrowMask.rawValue |
@@ -260,33 +287,35 @@ class GameScene: SKScene {
         setupScoreLabel()
     }
     
-    func changeWarningLabel(to text: String) {
+    func changeWarningLabel(to type: WarningType) {
         warningLabel.removeFromParent()
-        warningLabel = SKLabelNode(color: .white, text: text, shadowColor: .black)
+        warningLabel = SKLabelNode(color: .white, text: type.rawValue, shadowColor: .black)
         setupWarningLabel()
         let appear = SKAction.fadeAlpha(to: 1, duration: 0.5)
         let wait = SKAction.wait(forDuration: 0.5)
         let disappear = SKAction.fadeAlpha(to: 0, duration: 0.5)
         let sequence = SKAction.sequence([appear, wait, disappear])
         warningLabel.run(sequence)
-        if text == "Perfect!" {
-            let sfxNode = SKAudioNode(fileNamed: "success")
-            sfxNode.autoplayLooped = false
-            addChild(sfxNode)
-            sfxNode.run(.play())
+        switch type {
+        case .miss:
+            playSound(of: .miss)
+        case .great:
+            break
+        case .perfect:
+            playSound(of: .goalPoint)
         }
     }
     
     func toggleMask(_ mask: GameMask) {
         switch mask {
         case .topArrowMask:
-            isTopArrowInArea.toggle()
+            isTopArrowInArea = false
         case .leftArrowMask:
-            isLeftArrowInArea.toggle()
+            isLeftArrowInArea = false
         case .bottomArrowMask:
-            isBottomArrowInArea.toggle()
+            isBottomArrowInArea = false
         case .rightArrowMask:
-            isRightArrowInArea.toggle()
+            isRightArrowInArea = false
         default:
             break
         }
@@ -339,7 +368,10 @@ class GameScene: SKScene {
             if self.friendsMoved == 3 {
                 let wait = SKAction.wait(forDuration: 4)
                 let goToFinalScene = SKAction.run {
-                    self.gameVC?.sceneToPresent = .final
+                    self.view?.presentScene(TextScene(size: self.frame.size,
+                                                      type: .final,
+                                                      gameVC: self.gameVC,
+                                                      engine: self.engine))
                 }
                 let moveSequence = SKAction.sequence([wait, goToFinalScene])
                 self.worldNode.run(moveSequence)
@@ -353,6 +385,20 @@ class GameScene: SKScene {
             if !isWristOnScene {
                 worldNode.addChild(wristNode)
                 isWristOnScene = true
+            }
+            // X validation
+            var xPosition = convertedPoint.x
+            if xPosition < frame.minX {
+                xPosition = frame.minX
+            } else if xPosition > frame.maxX {
+                xPosition = frame.maxX
+            }
+            // Y validation
+            var yPosition = convertedPoint.y
+            if yPosition < frame.minY {
+                yPosition = frame.minY
+            } else if yPosition > frame.maxY {
+                yPosition = frame.maxY
             }
             wristNode.position = convertedPoint
         } else {
@@ -393,6 +439,7 @@ extension GameScene: MusicBeatDelegate {
         }
         let ojectiveNode = SKSpriteNode(imageNamed: "\(objective)_arrow")
         ojectiveNode.alpha = 0
+        ojectiveNode.zPosition = 21
         ojectiveNode.position = CGPoint(x: frame.midX, y: frame.midY)
         // Actions
         // Change the color and set alpha to 1 -> 0,5s

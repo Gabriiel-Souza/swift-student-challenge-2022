@@ -16,7 +16,7 @@ enum TextType {
     case final
 }
 
-class TextScene: SKScene, SkipInteraction {
+class TextScene: SKScene, SkipInteraction, SoundPlayable {
     // MARK: - Variables
     internal var nextArrow = SKSpriteNode(imageNamed: TextSceneAssets.nextArrow)
     private var tutorialLabel = SKLabelNode()
@@ -24,9 +24,11 @@ class TextScene: SKScene, SkipInteraction {
     private var texts = [String]()
     private var actualTextIndex = 0
     private weak var gameVC: GameViewController?
+    private weak var engine: MusicEngine?
     // MARK: - Initializers
-    init(size: CGSize, type: TextType, gameVC: GameViewController?) {
+    init(size: CGSize, type: TextType, gameVC: GameViewController?, engine: MusicEngine? = nil) {
         self.gameVC = gameVC
+        self.engine = engine
         self.type = type
         let speeches = type == .tutorial ? (TutorialSpeech.first.getTexts()) : (FinalSpeech.first.getTexts())
         self.texts = speeches
@@ -73,16 +75,21 @@ class TextScene: SKScene, SkipInteraction {
         gameVC?.sceneToPresent = .game
     }
     
+    private func goToCredits() {
+        view?.presentScene(CreditsScene(size: frame.size))
+    }
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        playSound(of: .button)
         if actualTextIndex < texts.count - 1 {
             changeTutorialText()
         } else {
-            if type == .tutorial {
+            switch type {
+            case .tutorial:
                 goToGameScene()
-            } else {
-                nextArrow.alpha = 0
+            case .final:
+                goToCredits()
             }
         }
     }
-    
 }

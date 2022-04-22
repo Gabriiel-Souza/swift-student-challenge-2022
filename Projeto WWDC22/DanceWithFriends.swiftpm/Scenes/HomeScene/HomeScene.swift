@@ -29,7 +29,7 @@ enum HomeScenePart {
     case second
 }
 
-class HomeScene: SKScene, SkipInteraction {
+class HomeScene: SKScene, SkipInteraction, SoundPlayable {
     // MARK: - Variables
     internal var nextArrow = SKSpriteNode(imageNamed: HomeSceneAssets.HUD.nextArrow)
     private var sentences = SKLabelNode()
@@ -148,6 +148,7 @@ class HomeScene: SKScene, SkipInteraction {
     }
     
     private func presentPart2() {
+        clearScene()
         view?.presentScene(HomeScene(size: frame.size, part: .second, gameVC: gameVC ?? GameViewController()), transition: .fade(withDuration: 0.5))
     }
     
@@ -159,11 +160,13 @@ class HomeScene: SKScene, SkipInteraction {
     }
     
     private func goToTutorial() {
-        gameVC?.sceneToPresent = .tutorial
+        clearScene()
+        view?.presentScene(TextScene(size: frame.size, type: .tutorial, gameVC: gameVC))
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         if finishedActualSpeech {
+            playSound(of: .button)
             if part == .first && actualSpeech == .six {
                 presentPart2()
             } else {
@@ -193,11 +196,13 @@ class HomeScene: SKScene, SkipInteraction {
         }
     }
     
-    deinit {
+    private func clearScene() {
+        removeAllActions()
         children.forEach { child in
             child.removeAllActions()
             child.removeAllChildren()
             child.removeFromParent()
         }
+        removeAllChildren()
     }
 }
