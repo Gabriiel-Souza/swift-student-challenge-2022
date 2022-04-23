@@ -76,7 +76,7 @@ class TextScene: SKScene, SkipInteraction, SoundPlayable {
     }
     
     private func goToCredits() {
-        view?.presentScene(CreditsScene(size: frame.size))
+        view?.presentScene(CreditsScene(size: frame.size, gameVC: gameVC))
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {

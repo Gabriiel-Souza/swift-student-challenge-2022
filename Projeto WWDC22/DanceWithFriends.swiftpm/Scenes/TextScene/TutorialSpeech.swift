@@ -8,9 +8,11 @@
 public enum TutorialSpeech: String, CaseIterable, Speechable {
     
     case first = ""
-    case second = "To score you must move!"
-    case third = "Move your hand to the objectives that appear, in the right order"
-    case last = "When you score enough, a new friend will join your party!"
+    case second = "To play you need to leave the iPad at least 30 centimeters away from you"
+    case third = "You will need to move! So remove nearby objects to avoid accidents"
+    case fourth = "Move one of your hands to the objectives that appear, in the right order"
+    case fifth = "When you score enough, a new friend will join your party!"
+    case last = "Ready?"
     
     mutating func next() -> Self {
         let speeches = Self.allCases

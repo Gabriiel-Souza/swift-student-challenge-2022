@@ -9,14 +9,14 @@ import SwiftUI
 
 struct GameView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> GameViewController {
-        loadFont()
+        getFont()
         return GameViewController()
     }
     
     func updateUIViewController(_ uiViewController: GameViewController, context: Context) { }
     
-    /// Load App Fonts
-    private func loadFont() {
+    /// Get Custom Font
+    private func getFont() {
         let fontURL = Bundle.main.url(forResource: "FredokaOne-Regular", withExtension: "ttf")
         CTFontManagerRegisterFontsForURL(fontURL! as CFURL, CTFontManagerScope.process, nil)
     }

@@ -27,6 +27,6 @@ extension GameScene: SKPhysicsContactDelegate {
             break
         }
         toggleMask(mask)
-        canScore ? addScore() : changeWarningLabel(to: .miss)
+        canScore ? addScore(mask: mask) : changeWarningLabel(to: .miss)
     }
 }

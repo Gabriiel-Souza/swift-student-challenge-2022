@@ -276,9 +276,28 @@ class GameScene: SKScene, SoundPlayable {
     }
     
     // MARK: - Score
-    func addScore() {
+    func addScore(mask: GameMask) {
         score += 1
         updateScoreLabel()
+        var arrowName = ""
+        
+        switch mask {
+        case .topArrowMask:
+            arrowName = "\(ObjectivePosition.top)_arrow"
+        case .leftArrowMask:
+            arrowName = "\(ObjectivePosition.left)_arrow"
+        case .bottomArrowMask:
+            arrowName = "\(ObjectivePosition.bottom)_arrow"
+        case .rightArrowMask:
+            arrowName = "\(ObjectivePosition.right)_arrow"
+        default:
+            break
+        }
+        let childToRemove = worldNode.children.first { node in
+            node.name == arrowName
+        }
+        childToRemove?.removeAllActions()
+        childToRemove?.removeFromParent()
     }
     
     private func updateScoreLabel() {
@@ -290,6 +309,7 @@ class GameScene: SKScene, SoundPlayable {
     func changeWarningLabel(to type: WarningType) {
         warningLabel.removeFromParent()
         warningLabel = SKLabelNode(color: .white, text: type.rawValue, shadowColor: .black)
+        warningLabel.zPosition = 22
         setupWarningLabel()
         let appear = SKAction.fadeAlpha(to: 1, duration: 0.5)
         let wait = SKAction.wait(forDuration: 0.5)
@@ -438,6 +458,7 @@ extension GameScene: MusicBeatDelegate {
             color = .green
         }
         let ojectiveNode = SKSpriteNode(imageNamed: "\(objective)_arrow")
+        ojectiveNode.name = "\(objective)_arrow"
         ojectiveNode.alpha = 0
         ojectiveNode.zPosition = 21
         ojectiveNode.position = CGPoint(x: frame.midX, y: frame.midY)
@@ -464,23 +485,34 @@ extension GameScene: MusicBeatDelegate {
         let scoreSequence = SKAction.sequence([wait, canScore])
         let appearAndMove = SKAction.group([setMaxAlpha, changeColor, moveTo, scoreSequence])
         // Remove from scene
-        let removeNode = SKAction.removeFromParent()
-        let disableScore = SKAction.run {
+        let disableScore = SKAction.run { [weak self] in
+            guard let self = self else { return }
+            let hasOtherNotes = self.hasOtherNotes(objective: objective)
             switch objective {
             case .top:
-                self.isTopArrowInArea.toggle()
+                self.isTopArrowInArea = hasOtherNotes
             case .left:
-                self.isLeftArrowInArea.toggle()
+                self.isLeftArrowInArea = hasOtherNotes
             case .bottom:
-                self.isBottomArrowInArea.toggle()
+                self.isBottomArrowInArea = hasOtherNotes
             case .right:
-                self.isRightArrowInArea.toggle()
+                self.isRightArrowInArea = hasOtherNotes
             }
         }
+        let removeNode = SKAction.removeFromParent()
         // Sequence -> 2.5s
         let nodeSequence = SKAction.sequence([appearAndMove, disableScore, removeNode])
         ojectiveNode.run(nodeSequence)
         worldNode.addChild(ojectiveNode)
+    }
+    
+    private func hasOtherNotes(objective: ObjectivePosition) -> Bool {
+        if worldNode.children.contains(where: { node in
+            node.name == "\(objective)_arrow"
+        }) {
+            return true
+        }
+        return false
     }
     
     func beatWillOccur(in time: Double) {
