@@ -297,7 +297,9 @@ class GameScene: SKScene, SoundPlayable {
             node.name == arrowName
         }
         childToRemove?.removeAllActions()
-        childToRemove?.removeFromParent()
+        let disappear = SKAction.fadeOut(withDuration: 0.4)
+        let remove = SKAction.removeFromParent()
+        childToRemove?.run(.sequence([disappear, remove]))
     }
     
     private func updateScoreLabel() {
